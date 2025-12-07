@@ -57,31 +57,29 @@ instead of punching holes in the firewall and exposing port 443 to the scanner-i
 
 ```mermaid
 graph LR
-    subgraph "public internet"
-        Client([user / script])
+    subgraph "Public Internet"
+        Client([User])
     end
 
-    subgraph "cloudflare edge"
-        CF_Ingress[tunnel endpoint]
+    subgraph "Cloudflare DNS"
+        CF[Proxy A Record]
     end
 
-    subgraph "oracle vps (zero trust)"
-        Cloudflared[cloudflared daemon]
-        Caddy[caddy reverse proxy]
+    subgraph "Oracle VPS"
+        Caddy[Caddy (Port 443)]
     end
 
-    subgraph "the target"
-        Upstream[helfrio api]
-        WAF[bot protection / ja3 scanner]
+    subgraph "The Target"
+        Upstream[Helfrio API]
+        Firewall[ASN / IP Blocklist]
     end
 
-    Client -- "https" --> CF_Ingress
-    CF_Ingress <-->|encrypted tunnel| Cloudflared
-    Cloudflared -- "http :8080" --> Caddy
-    Caddy -- "https (go-tls)" --> WAF
-    WAF -- "drop connection" --x Caddy
+    Client -- "https://api.primary-node.dev" --> CF
+    CF -- "Forward to 192.0.2.100" --> Caddy
+    Caddy -- "Request from Oracle IP" --> Upstream
+    Firewall -- "403 Forbidden (Datacenter IP)" --x Caddy
     
-    style WAF fill:#ff9999,stroke:#333,stroke-width:2px
+    style Firewall fill:#ff9999,stroke:#333,stroke-width:2px
     style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
 ```
 
@@ -97,6 +95,36 @@ the issue was the car i drove up in. Helfrio subscribes to commercial threat int
 the tunnel actually solved this. by routing through cloudflare, Helfrio sees a cloudflare edge ip, not my dirty oracle ip. i flushed the dns, retried, and...
 
 **HTTP 403 Forbidden.**
+
+```mermaid
+graph LR
+    subgraph "Public Internet"
+        Client([User / Script])
+    end
+
+    subgraph "Cloudflare Edge"
+        CF_Ingress[Cloudflare Tunnel Endpoint]
+    end
+
+    subgraph "Oracle VPS (Zero Trust)"
+        Cloudflared[cloudflared daemon]
+        Caddy[Caddy Reverse Proxy]
+    end
+
+    subgraph "The Target"
+        Upstream[Helfrio API]
+        WAF[Header Analysis]
+    end
+
+    Client -- "HTTPS" --> CF_Ingress
+    CF_Ingress <-->|Encrypted Tunnel| Cloudflared
+    Cloudflared -- "HTTP :8080" --> Caddy
+    Caddy -- "HTTPS (Go-TLS)" --> WAF
+    WAF -- "403 Forbidden (Bot Headers)" --x Caddy
+    
+    style WAF fill:#ff9999,stroke:#333,stroke-width:2px
+    style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
+```
 
 ### phase 3: header scrubbing
 if the ip wasn't the issue, it had to be the headers. i was testing with python scripts and node.js. modern wafs (web application firewalls) are sensitive. if you send `User-Agent: python-requests/2.31.0` or `x-stainless-lang: js`, you are screaming "i am a bot."
