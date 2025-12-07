@@ -1,8 +1,8 @@
-# Stealth Gateway: Defeating JA3 Fingerprinting with Python and Despair
+# Stealth Gateway: Defeating JA3 Fingerprinting with Python and Despair<br>
 
-**Date:** December 7, 2025<br>
-**Topic:** Network Engineering, Reverse Engineering, Zero Trust Security<br>
-**Page:** https://microck.github.io/ja3-bypass-gateway/<br>
+## **Date:** December 7, 2025<br>
+## **Topic:** Network Engineering, Reverse Engineering, Zero Trust Security<br>
+## **Page:** https://microck.github.io/ja3-bypass-gateway/<br>
 ---
 
 ### tl;dr
