@@ -2,7 +2,7 @@
 
 **Date:** December 7, 2025
 **Topic:** Network Engineering, Reverse Engineering, Zero Trust Security
-
+**Page:** https://microck.github.io/ja3-bypass-gateway/
 ---
 
 ### tl;dr
