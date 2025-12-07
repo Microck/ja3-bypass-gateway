@@ -20,6 +20,7 @@ i had a spare oracle cloud vps sitting around collecting dust. it has a static i
 2.  my vps forwards that request to Helfrio.
 3.  Helfrio sees the vps ip (not my dynamic home ip) and sends the data back.
 
+```mermaid
 graph TD
     subgraph "the dream (30 minute job)"
         Laptop1[me] -->|request| VPS1[oracle vps]
@@ -35,6 +36,7 @@ graph TD
     
     style API1 fill:#ccffcc,stroke:#333
     style API2 fill:#ff9999,stroke:#333
+```
 
 i thought this would take thirty minutes. install a proxy, open a port, and continue with the important stuff i had to do.
 i was wrong.
@@ -53,6 +55,7 @@ once the binary was alive, i hit the **firewall**. oracle cloud has three layers
 
 instead of punching holes in the firewall and exposing port 443 to the scanner-infested internet, i opted for a **cloudflare tunnel**. this creates an outbound-only connection. the vps talks to cloudflare; the internet talks to cloudflare. zero open ports on the host. clean. secure. elegant.
 
+```mermaid
 graph LR
     subgraph "public internet"
         Client([user / script])
@@ -80,6 +83,7 @@ graph LR
     
     style WAF fill:#ff9999,stroke:#333,stroke-width:2px
     style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
+```
 
 ### phase 2: the "dirty" ip
 i fired up the tunnel. i pointed my domain `primary-node.dev` to my tunnel. i sent a test request via `curl`.
@@ -128,6 +132,7 @@ when a client (like a browser or a script) connects to a secure server, it sends
 
 the conflict was obvious. my headers screamed "i am chrome on windows," but my ssl handshake screamed "i am a go program on linux." the provider saw the mismatch - the accent didn't match the costume - and silently dropped the connection to waste my time. instead of banning me (which gives me information), they ghosted me.
 
+```mermaid
 sequenceDiagram
     participant C as caddy (go-tls)
     participant P as python (openssl)
@@ -144,6 +149,7 @@ sequenceDiagram
     W->>P: match "standard linux" -> ALLOW (ServerHello)
     P->>W: HTTP GET /v1/chat
     W->>P: HTTP 200 OK (json data)
+```
 
 i realized i couldn't fix caddy's fingerprint without recompiling the entire server with obscure libraries like `utls`. i didn't have time for that.
 
@@ -183,6 +189,7 @@ i rewrote the bridge:
 2.  **identity encoding:** i forced the header `Accept-Encoding: identity`. this tells the upstream provider: "do not compress anything. send me raw text. i don't care about bandwidth."
 3.  **no streaming:** i configured the bridge to download the *entire* response into memory first, verify it, and only then send it back to the client in one solid piece.
 
+```mermaid
 flowchart TD
     Start([Incoming Request from Tunnel]) --> Auth{Check Bearer Token}
     
@@ -203,6 +210,7 @@ flowchart TD
     
     style Crash fill:#ffcccc,stroke:#333
     style Buffer fill:#ccffcc,stroke:#333
+```
 
 here is the code that finally punched through the wall. it’s not pretty, but it survives the hostile environment.
 
@@ -274,6 +282,7 @@ if __name__ == "__main__":
 ### the final architecture
 what started as a simple proxy is now a robust stealth gateway that is invisible to port scanners and indistinguishable from a standard client to the upstream provider. we moved from a simple "connect a to b" problem to a game of "who are you?" - spoofing headers, matching tls signatures, and managing ip reputation.
 
+```mermaid
 graph LR
     subgraph "trusted client"
         User([user / script])
@@ -306,6 +315,7 @@ graph LR
     
     style Python fill:#ccffcc,stroke:#333,stroke-width:2px
     style Upstream fill:#ccffcc,stroke:#333,stroke-width:2px
+```
 
 ### security audit: is this safe?
 you might wonder if creating a bridge like this leaves the server vulnerable. i asked myself the same question. strangely, this setup is **more secure** than a standard web server configuration.
