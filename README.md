@@ -70,14 +70,20 @@ graph LR
     end
 
     subgraph "The Target"
-        Upstream[Helfrio API]
+        direction LR
         Firewall["ASN / IP Blocklist"]
+        Upstream["Helfrio API"]
+        
+        %% The Firewall guards the API
+        Firewall --- Upstream
     end
 
     Client -- "https://api.primary-node.dev" --> CF
     CF -- "Forward to 192.0.2.100" --> Caddy
-    Caddy -- "Request from Oracle IP" --> Upstream
-    Firewall -- "403 Forbidden (Datacenter IP)" --x Caddy
+    
+    %% Caddy hits the Firewall, not the API directly
+    Caddy -- "Request from Oracle IP" --> Firewall
+    Firewall -- "403 Forbidden" --x Caddy
     
     style Firewall fill:#ff9999,stroke:#333,stroke-width:2px
     style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
