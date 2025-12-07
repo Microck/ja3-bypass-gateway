@@ -22,13 +22,13 @@ i had a spare oracle cloud vps sitting around collecting dust. it has a static i
 
 ```mermaid
 graph TD
-    subgraph "the reality (not 30 minutes)"
+    subgraph "reality"
         Laptop2[me] -->|request| VPS2[oracle vps]
         VPS2 -- "403 forbidden (ip block)" --x API2[helfrio api]
         VPS2 -- "200 OK 0 bytes (tls block)" --x API2
     end
 
-    subgraph "the dream (30 minute job)"
+    subgraph "expectation"
         Laptop1[me] -->|request| VPS1[oracle vps]
         VPS1 -->|forward| API1[helfrio api]
         API1 -->|200 OK| VPS1
