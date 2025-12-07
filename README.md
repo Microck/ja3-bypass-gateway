@@ -66,12 +66,12 @@ graph LR
     end
 
     subgraph "Oracle VPS"
-        Caddy[Caddy (Port 443)]
+        Caddy["Caddy (Port 443)"]
     end
 
     subgraph "The Target"
         Upstream[Helfrio API]
-        Firewall[ASN / IP Blocklist]
+        Firewall["ASN / IP Blocklist"]
     end
 
     Client -- "https://api.primary-node.dev" --> CF
