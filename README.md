@@ -62,7 +62,7 @@ graph LR
     end
 
     subgraph "Cloudflare DNS"
-        CF[Proxy A Record]
+        CF["Proxy A Record"]
     end
 
     subgraph "Oracle VPS"
@@ -70,18 +70,14 @@ graph LR
     end
 
     subgraph "The Target"
-        direction LR
         Firewall["ASN / IP Blocklist"]
         Upstream["Helfrio API"]
-        
-        %% The Firewall guards the API
-        Firewall --- Upstream
     end
 
     Client -- "https://api.primary-node.dev" --> CF
     CF -- "Forward to 192.0.2.100" --> Caddy
     
-    %% Caddy hits the Firewall, not the API directly
+    %% The Failure Flow
     Caddy -- "Request from Oracle IP" --> Firewall
     Firewall -- "403 Forbidden" --x Caddy
     
@@ -105,28 +101,30 @@ the tunnel actually solved this. by routing through cloudflare, Helfrio sees a c
 ```mermaid
 graph LR
     subgraph "Public Internet"
-        Client([User / Script])
+        Client(["User / Script"])
     end
 
     subgraph "Cloudflare Edge"
-        CF_Ingress[Cloudflare Tunnel Endpoint]
+        CF_Ingress["Cloudflare Tunnel Endpoint"]
     end
 
     subgraph "Oracle VPS (Zero Trust)"
-        Cloudflared[cloudflared daemon]
-        Caddy[Caddy Reverse Proxy]
+        Cloudflared["cloudflared daemon"]
+        Caddy["Caddy Reverse Proxy"]
     end
 
     subgraph "The Target"
-        Upstream[Helfrio API]
-        WAF[Header Analysis]
+        WAF["Header Analysis / WAF"]
+        Upstream["Helfrio API"]
     end
 
     Client -- "HTTPS" --> CF_Ingress
     CF_Ingress <-->|Encrypted Tunnel| Cloudflared
     Cloudflared -- "HTTP :8080" --> Caddy
+    
+    %% The Failure Flow
     Caddy -- "HTTPS (Go-TLS)" --> WAF
-    WAF -- "403 Forbidden (Bot Headers)" --x Caddy
+    WAF -- "403/200 (Bot Detected)" --x Caddy
     
     style WAF fill:#ff9999,stroke:#333,stroke-width:2px
     style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
@@ -319,32 +317,36 @@ what started as a simple proxy is now a robust stealth gateway that is invisible
 ```mermaid
 graph LR
     subgraph "Trusted Client"
-        User([User / Script])
+        User(["User / Script"])
         Auth["Header: Bearer <GATEWAY_PASSWORD>"]
     end
 
     subgraph "Cloudflare Edge"
-        CF_WAF[Geo-Block & WAF]
+        CF_WAF["Geo-Block & WAF"]
     end
 
     subgraph "Oracle VPS (Zero Trust)"
-        Tunnel[cloudflared daemon]
+        Tunnel["cloudflared daemon"]
         
         subgraph "Localhost Only"
-            Python[Python Bridge :8082]
-            Logic[1. Auth Check<br/>2. Header Scrub<br/>3. Buffer Response]
+            Python["Python Bridge :8082"]
+            Logic["1. Auth Check<br/>2. Header Scrub<br/>3. Buffer"]
         end
     end
 
     subgraph "The Target"
-        Upstream[Helfrio API]
+        TargetWAF["Bot Protection / JA3"]
+        Upstream["Helfrio API"]
     end
 
-    User -- "1. HTTPS Request (primary-node.dev)" --> CF_WAF
+    User -- "1. HTTPS Request" --> CF_WAF
     CF_WAF -- "2. Filtered Request" --> Tunnel
     Tunnel -- "3. HTTP Stream" --> Python
     Python -.-> Logic
-    Logic -- "4. HTTPS (OpenSSL)" --> Upstream
+    
+    %% The Success Flow
+    Logic -- "4. HTTPS (OpenSSL)" --> TargetWAF
+    TargetWAF -- "Allowed (Standard Fingerprint)" --> Upstream
     Upstream -- "5. Valid JSON" --> Logic
     
     style Python fill:#ccffcc,stroke:#333,stroke-width:2px
