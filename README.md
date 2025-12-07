@@ -24,8 +24,8 @@ i had a spare oracle cloud vps sitting around collecting dust. it has a static i
 graph TD
     subgraph "Reality"
         Laptop2[Me] -->|Request| VPS2["Oracle VPS"]
-        VPS2 -- "403 Forbidden (IP Block)" --x API2["Helfrio API"]
-        VPS2 -- "200 OK (0 Bytes) (TLS Block)" --x API2
+        VPS2 -- "403 Forbidden<br/>(IP Block)" --x API2["Helfrio API"]
+        VPS2 -- "200 OK (0 Bytes)<br/>(TLS Block)" --x API2
     end
 
     subgraph "Expectation"
@@ -75,7 +75,7 @@ graph LR
         Upstream["Helfrio API"]
     end
 
-    Client -- "https://api.primary-node.dev" --> CF
+    Client -- "https://api.mynode.dev" --> CF
     CF -- "Forward to 192.0.2.100" --> Caddy
     
     %% The Failure Flow
@@ -169,21 +169,21 @@ the conflict was obvious. my headers screamed "i am chrome on windows," but my s
 
 ```mermaid
 sequenceDiagram
-    participant C as caddy (go-tls)
-    participant P as python (openssl)
-    participant W as helfrio waf
+    participant C as Caddy (Go-TLS)
+    participant P as Python (OpenSSL)
+    participant W as Helfrio WAF
 
-    Note over C,W: attempt 1: the enterprise proxy
-    C->>W: ClientHello (cipher suites: [0x1301, 0x1302...])
-    W->>W: analyze fingerprint (ja3)
-    W--x C: match "golang" -> DROP (200 OK, 0 bytes)
+    Note over C,W: Attempt 1: The Enterprise Proxy
+    C->>W: ClientHello (Cipher Suites: [0x1301, 0x1302...])
+    W->>W: Analyze Fingerprint (JA3)
+    W--x C: Match "Golang" -> DROP (200 OK, 0 Bytes)
 
-    Note over P,W: attempt 2: the dumb script
-    P->>W: ClientHello (cipher suites: [0xC02B, 0xC02F...])
-    W->>W: analyze fingerprint (ja3)
-    W->>P: match "standard linux" -> ALLOW (ServerHello)
+    Note over P,W: Attempt 2: The Dumb Script
+    P->>W: ClientHello (Cipher Suites: [0xC02B, 0xC02F...])
+    W->>W: Analyze Fingerprint (JA3)
+    W->>P: Match "Standard Linux" -> ALLOW (ServerHello)
     P->>W: HTTP GET /v1/chat
-    W->>P: HTTP 200 OK (json data)
+    W->>P: HTTP 200 OK (JSON Data)
 ```
 
 i realized i couldn't fix caddy's fingerprint without recompiling the entire server with obscure libraries like `utls`. i didn't have time for that.
@@ -226,22 +226,22 @@ i rewrote the bridge:
 
 ```mermaid
 flowchart TD
-    Start([Incoming Request from Tunnel]) --> Auth{Check Bearer Token}
+    Start([Incoming Request<br/>from Tunnel]) --> Auth{Check Bearer<br/>Token}
     
-    Auth -- Invalid --> Deny[Return 401 Unauthorized]
+    Auth -- Invalid --> Deny[Return 401<br/>Unauthorized]
     Auth -- Valid --> Headers[Scrub Headers]
     
-    Headers --> Fake[Inject User-Agent: curl/7.29.0]
-    Fake --> Identity[Force Accept-Encoding: identity]
+    Headers --> Fake[Inject User-Agent:<br/>curl/7.29.0]
+    Fake --> Identity[Force Accept-Encoding:<br/>identity]
     
-    Identity --> Request[Send Request to Helfrio]
+    Identity --> Request[Send Request<br/>to Helfrio]
     
     Request --> Stream{Stream?}
-    Stream -- Yes --> Crash["Error: Chunk Mismatch / Gzip Fail"]
-    Stream -- No --> Buffer["Buffer FULL Response in RAM"]
+    Stream -- Yes --> Crash["Error: Chunk Mismatch<br/>or Gzip Fail"]
+    Stream -- No --> Buffer["Buffer FULL<br/>Response in RAM"]
     
-    Buffer --> Clean[Strip Hop-by-Hop Headers]
-    Clean --> Return([Return Clean JSON to Tunnel])
+    Buffer --> Clean[Strip Hop-by-Hop<br/>Headers]
+    Clean --> Return([Return Clean JSON<br/>to Tunnel])
     
     %% High Contrast Styling
     style Crash fill:#ff9999,stroke:#333,stroke-width:2px,color:black
@@ -322,7 +322,7 @@ what started as a simple proxy is now a robust stealth gateway that is invisible
 graph LR
     subgraph "Trusted Client"
         User(["User / Script"])
-        Auth["Header: Bearer <GATEWAY_PASSWORD>"]
+        Auth["Header: Bearer<br/><GATEWAY_PASSWORD>"]
     end
 
     subgraph "Cloudflare Edge"
