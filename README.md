@@ -30,8 +30,8 @@ graph TD
 
     subgraph "the reality (72 hours later)"
         Laptop2[me] -->|request| VPS2[oracle vps]
-        VPS2 --x|403 forbidden (ip block)| API2[helfrio api]
-        VPS2 --x|200 OK (0 bytes) (tls block)| API2
+        VPS2 -- "403 forbidden (ip block)" --x API2[helfrio api]
+        VPS2 -- "200 OK 0 bytes (tls block)" --x API2
     end
     
     style API1 fill:#ccffcc,stroke:#333
@@ -75,11 +75,11 @@ graph LR
         WAF[bot protection / ja3 scanner]
     end
 
-    Client -->|https| CF_Ingress
+    Client -- "https" --> CF_Ingress
     CF_Ingress <-->|encrypted tunnel| Cloudflared
-    Cloudflared -->|http :8080| Caddy
-    Caddy -->|https (go-tls)| WAF
-    WAF --x|drop connection| Caddy
+    Cloudflared -- "http :8080" --> Caddy
+    Caddy -- "https (go-tls)" --> WAF
+    WAF -- "drop connection" --x Caddy
     
     style WAF fill:#ff9999,stroke:#333,stroke-width:2px
     style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
@@ -284,34 +284,34 @@ what started as a simple proxy is now a robust stealth gateway that is invisible
 
 ```mermaid
 graph LR
-    subgraph "trusted client"
-        User([user / script])
-        Auth["header: Bearer <GATEWAY_PASSWORD>"]
+    subgraph "Trusted Client"
+        User([User / Script])
+        Auth["Header: Bearer <GATEWAY_PASSWORD>"]
     end
 
-    subgraph "cloudflare edge"
-        CF_WAF[geo-block & waf]
+    subgraph "Cloudflare Edge"
+        CF_WAF[Geo-Block & WAF]
     end
 
-    subgraph "oracle vps (zero trust)"
+    subgraph "Oracle VPS (Zero Trust)"
         Tunnel[cloudflared daemon]
         
-        subgraph "localhost only"
-            Python[python bridge :8082]
-            Logic[1. auth check<br/>2. header scrub<br/>3. buffer response]
+        subgraph "Localhost Only"
+            Python[Python Bridge :8082]
+            Logic[1. Auth Check<br/>2. Header Scrub<br/>3. Buffer Response]
         end
     end
 
-    subgraph "the target"
-        Upstream[helfrio api]
+    subgraph "The Target"
+        Upstream[Helfrio API]
     end
 
-    User -- "1. https request (primary-node.dev)" --> CF_WAF
-    CF_WAF -- "2. filtered request" --> Tunnel
-    Tunnel -- "3. http stream" --> Python
+    User -- "1. HTTPS Request (primary-node.dev)" --> CF_WAF
+    CF_WAF -- "2. Filtered Request" --> Tunnel
+    Tunnel -- "3. HTTP Stream" --> Python
     Python -.-> Logic
-    Logic -- "4. https (openssl)" --> Upstream
-    Upstream -- "5. valid json" --> Logic
+    Logic -- "4. HTTPS (OpenSSL)" --> Upstream
+    Upstream -- "5. Valid JSON" --> Logic
     
     style Python fill:#ccffcc,stroke:#333,stroke-width:2px
     style Upstream fill:#ccffcc,stroke:#333,stroke-width:2px
