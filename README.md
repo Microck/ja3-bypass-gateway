@@ -22,20 +22,21 @@ i had a spare oracle cloud vps sitting around collecting dust. it has a static i
 
 ```mermaid
 graph TD
-    subgraph "reality"
-        Laptop2[me] -->|request| VPS2[oracle vps]
-        VPS2 -- "403 forbidden (ip block)" --x API2[helfrio api]
-        VPS2 -- "200 OK 0 bytes (tls block)" --x API2
+    subgraph "Reality"
+        Laptop2[Me] -->|Request| VPS2["Oracle VPS"]
+        VPS2 -- "403 Forbidden (IP Block)" --x API2["Helfrio API"]
+        VPS2 -- "200 OK (0 Bytes) (TLS Block)" --x API2
     end
 
-    subgraph "expectation"
-        Laptop1[me] -->|request| VPS1[oracle vps]
-        VPS1 -->|forward| API1[helfrio api]
+    subgraph "Expectation"
+        Laptop1[Me] -->|Request| VPS1["Oracle VPS"]
+        VPS1 -->|Forward| API1["Helfrio API"]
         API1 -->|200 OK| VPS1
     end
     
-    style API1 fill:#ccffcc,stroke:#333
-    style API2 fill:#ff9999,stroke:#333
+    %% High Contrast Styling
+    style API1 fill:#ccffcc,stroke:#333,stroke-width:2px,color:black
+    style API2 fill:#ff9999,stroke:#333,stroke-width:2px,color:black
 ```
 
 i thought this would take thirty minutes. install a proxy, open a port, and continue with the important stuff i had to do.
@@ -81,8 +82,9 @@ graph LR
     Caddy -- "Request from Oracle IP" --> Firewall
     Firewall -- "403 Forbidden" --x Caddy
     
-    style Firewall fill:#ff9999,stroke:#333,stroke-width:2px
-    style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
+    %% High Contrast Styling
+    style Firewall fill:#ff9999,stroke:#333,stroke-width:2px,color:black
+    style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px,color:black
 ```
 
 ### phase 2: the "dirty" ip
@@ -126,8 +128,9 @@ graph LR
     Caddy -- "HTTPS (Go-TLS)" --> WAF
     WAF -- "403/200 (Bot Detected)" --x Caddy
     
-    style WAF fill:#ff9999,stroke:#333,stroke-width:2px
-    style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px
+    %% High Contrast Styling
+    style WAF fill:#ff9999,stroke:#333,stroke-width:2px,color:black
+    style Caddy fill:#ffcccc,stroke:#333,stroke-width:2px,color:black
 ```
 
 ### phase 3: header scrubbing
@@ -234,14 +237,15 @@ flowchart TD
     Identity --> Request[Send Request to Helfrio]
     
     Request --> Stream{Stream?}
-    Stream -- Yes --> Crash[Error: Chunk Mismatch / Gzip Fail]
-    Stream -- No --> Buffer[Buffer FULL Response in RAM]
+    Stream -- Yes --> Crash["Error: Chunk Mismatch / Gzip Fail"]
+    Stream -- No --> Buffer["Buffer FULL Response in RAM"]
     
     Buffer --> Clean[Strip Hop-by-Hop Headers]
     Clean --> Return([Return Clean JSON to Tunnel])
     
-    style Crash fill:#ffcccc,stroke:#333
-    style Buffer fill:#ccffcc,stroke:#333
+    %% High Contrast Styling
+    style Crash fill:#ff9999,stroke:#333,stroke-width:2px,color:black
+    style Buffer fill:#ccffcc,stroke:#333,stroke-width:2px,color:black
 ```
 
 here is the code that finally punched through the wall. it’s not pretty, but it survives the hostile environment.
@@ -339,18 +343,23 @@ graph LR
         Upstream["Helfrio API"]
     end
 
+    %% The Request Flow (Solid Lines)
     User -- "1. HTTPS Request" --> CF_WAF
     CF_WAF -- "2. Filtered Request" --> Tunnel
     Tunnel -- "3. HTTP Stream" --> Python
     Python -.-> Logic
-    
-    %% The Success Flow
     Logic -- "4. HTTPS (OpenSSL)" --> TargetWAF
-    TargetWAF -- "Allowed (Standard Fingerprint)" --> Upstream
-    Upstream -- "5. Valid JSON" --> Logic
+    TargetWAF -- "Allowed" --> Upstream
     
-    style Python fill:#ccffcc,stroke:#333,stroke-width:2px
-    style Upstream fill:#ccffcc,stroke:#333,stroke-width:2px
+    %% The Response Flow (Dotted Lines)
+    Upstream -. "5. Valid JSON" .-> Logic
+    Logic -. "6. Clean Response" .-> Tunnel
+    Tunnel -. "7. Encrypted Data" .-> CF_WAF
+    CF_WAF -. "8. Success (200 OK)" .-> User
+    
+    %% High Contrast Styling
+    style Python fill:#ccffcc,stroke:#333,stroke-width:2px,color:black
+    style Upstream fill:#ccffcc,stroke:#333,stroke-width:2px,color:black
 ```
 
 ### security audit: is this safe?
